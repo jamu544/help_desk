@@ -12,17 +12,20 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.MapView
 
 class MainActivity : AppCompatActivity() {
 
     private val REQUEST_CODE_LOCATION_PERMISSION = 1
     private lateinit var  fusedLocationClient: FusedLocationProviderClient
+    private lateinit var mapView: MapView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         requestLocationPermission()
         initLocationClient()
+        mapView = findViewById(R.id.mapView)
     }
 
     //check user has permission is granted
