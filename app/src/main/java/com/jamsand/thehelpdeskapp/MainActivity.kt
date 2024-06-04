@@ -12,13 +12,19 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
+import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
 
 class MainActivity : AppCompatActivity() {
 
     private val REQUEST_CODE_LOCATION_PERMISSION = 1
     private lateinit var  fusedLocationClient: FusedLocationProviderClient
     private lateinit var mapView: MapView
+    private lateinit var googleMap: GoogleMap
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,6 +32,11 @@ class MainActivity : AppCompatActivity() {
         requestLocationPermission()
         initLocationClient()
         mapView = findViewById(R.id.mapView)
+        mapView.onCreate(savedInstanceState)
+        mapView.getMapAsync{ google ->
+            // Map is ready, do something with the map
+        }
+
     }
 
     //check user has permission is granted
@@ -91,11 +102,67 @@ class MainActivity : AppCompatActivity() {
             Looper.getMainLooper()
         )
 }
+//    private val locationCallback = object : LocationCallback() {
+//        override fun onLocationResult(locationResult: LocationResult) {
+//            locationResult?.lastLocation?.let { location ->
+//                //location updates recieved, do something with the location
+//            }
+//        }
+//    }
+
+    override fun onStart() {
+        super.onStart()
+        mapView.onStart()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        mapView.onResume()
+    }
+    override fun onPause() {
+        super.onPause()
+        mapView.onPause()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        mapView.onStop()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mapView.onDestroy()
+    }
+
+    override fun onLowMemory() {
+        super.onLowMemory()
+        mapView.onLowMemory()
+    }
+
+    //display location on the map,add marker at the current location
+    private fun updateMarker( location: LatLng){
+        googleMap.clear()
+
+        val markerOptions = MarkerOptions()
+            .position(location)
+            .title("Current Location")
+            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
+        googleMap.addMarker(markerOptions)
+
+    }
+
     private val locationCallback = object : LocationCallback() {
-        override fun onLocationResult(locationResult: LocationResult) {
+        override fun onLocationResult(locationResult: LocationResult?) {
             locationResult?.lastLocation?.let { location ->
-                //location updates recieved, do something with the location
+
+                val latLng = LatLng(location.latitude, location.longitude)
+                updateMarker(latLng)
             }
         }
     }
+
+
+
+
+
 }
