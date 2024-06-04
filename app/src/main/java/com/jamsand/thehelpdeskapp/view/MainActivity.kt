@@ -1,4 +1,4 @@
-package com.jamsand.thehelpdeskapp
+package com.jamsand.thehelpdeskapp.view
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -14,10 +14,10 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
-import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.jamsand.thehelpdeskapp.R
 
 class MainActivity : AppCompatActivity() {
 
