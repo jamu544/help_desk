@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
+import android.location.Location
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Looper
@@ -30,8 +31,22 @@ import com.jamsand.thehelpdeskapp.R
 class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private val REQUEST_CODE_LOCATION_PERMISSION = 1
+    //-main class for receiving location updates
     private lateinit var  fusedLocationClient: FusedLocationProviderClient
-    private lateinit var mapView: MapView
+
+    //requirements for location updates i.e how often you
+    // should receive updates, the priority, etc.
+    private lateinit var locationRequest: LocationRequest
+
+    // called when FusedLocationProviderClient has a new Location.
+    private lateinit var locationCallback: LocationCallback
+
+    //used only for local storage of the last known location. Usually, this would be saved to your
+    // database, but because this is a simplified sample without a full database, we only need the
+    // last location to create a Notification if the user navigates away from the app.
+    private var currentLocation: Location? = null
+
+//    private lateinit var mapView: MapView
     private lateinit var googleMap: GoogleMap
 
     private lateinit var mMap: GoogleMap
@@ -40,13 +55,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        requestLocationPermission()
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
 
 
-//        requestLocationPermission()
 //        initLocationClient()
 //        mapView = findViewById(R.id.mapView)
 //        mapView.onCreate(savedInstanceState)
@@ -87,12 +102,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
     }
 
-    private val locationRequest = LocationRequest.create().apply {
-        interval = 1000 // update interval in milliseconds
-        fastestInterval = 500 // fastest update interval in milliseconds
-        priority  = LocationRequest.PRIORITY_HIGH_ACCURACY // location accuracy is priority
-
-    }
+//    private val locationRequest = LocationRequest.create().apply {
+//        interval = 1000 // update interval in milliseconds
+//        fastestInterval = 500 // fastest update interval in milliseconds
+//        priority  = LocationRequest.PRIORITY_HIGH_ACCURACY // location accuracy is priority
+//
+//    }
 
     private fun startLocationUpdates() {
         if (ActivityCompat.checkSelfPermission(
@@ -169,15 +184,15 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     }
 
-    private val locationCallback = object : LocationCallback() {
-        override fun onLocationResult(locationResult: LocationResult) {
-            locationResult.lastLocation?.let { location ->
-
-                val latLng = LatLng(location.latitude, location.longitude)
-                updateMarker(latLng)
-            }
-        }
-    }
+//    private val locationCallback = object : LocationCallback() {
+//        override fun onLocationResult(locationResult: LocationResult) {
+//            locationResult.lastLocation?.let { location ->
+//
+//                val latLng = LatLng(location.latitude, location.longitude)
+//                updateMarker(latLng)
+//            }
+//        }
+//    }
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
