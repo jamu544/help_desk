@@ -1,7 +1,11 @@
 package com.jamsand.thehelpdeskapp.view
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.Drawable
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Looper
@@ -12,30 +16,43 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.jamsand.thehelpdeskapp.R
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private val REQUEST_CODE_LOCATION_PERMISSION = 1
     private lateinit var  fusedLocationClient: FusedLocationProviderClient
     private lateinit var mapView: MapView
     private lateinit var googleMap: GoogleMap
 
+    private lateinit var mMap: GoogleMap
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        requestLocationPermission()
-        initLocationClient()
-        mapView = findViewById(R.id.mapView)
-        mapView.onCreate(savedInstanceState)
-        mapView.getMapAsync{ google ->
-            // Map is ready, do something with the map
-        }
+
+        val mapFragment = supportFragmentManager
+            .findFragmentById(R.id.map) as SupportMapFragment
+        mapFragment.getMapAsync(this)
+
+
+
+//        requestLocationPermission()
+//        initLocationClient()
+//        mapView = findViewById(R.id.mapView)
+//        mapView.onCreate(savedInstanceState)
+//        mapView.getMapAsync{ google ->
+        // Map is ready, do something with the map
+//        }
 
     }
 
@@ -60,9 +77,9 @@ class MainActivity : AppCompatActivity() {
         permissions: Array<out String>,
         grantResults: IntArray
     ) {
-        if (requestCode == REQUEST_CODE_LOCATION_PERMISSION && grantResults.isNotEmpty() &&
+        if(requestCode == REQUEST_CODE_LOCATION_PERMISSION && grantResults.isNotEmpty() &&
             grantResults[0] == PackageManager.PERMISSION_GRANTED)
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
     // retrieve the devices's last known location
@@ -101,7 +118,7 @@ class MainActivity : AppCompatActivity() {
             locationCallback,// new location update when available
             Looper.getMainLooper()
         )
-}
+    }
 //    private val locationCallback = object : LocationCallback() {
 //        override fun onLocationResult(locationResult: LocationResult) {
 //            locationResult?.lastLocation?.let { location ->
@@ -110,41 +127,42 @@ class MainActivity : AppCompatActivity() {
 //        }
 //    }
 
-    override fun onStart() {
-        super.onStart()
-        mapView.onStart()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        mapView.onResume()
-    }
-    override fun onPause() {
-        super.onPause()
-        mapView.onPause()
-    }
-
-    override fun onStop() {
-        super.onStop()
-        mapView.onStop()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        mapView.onDestroy()
-    }
-
-    override fun onLowMemory() {
-        super.onLowMemory()
-        mapView.onLowMemory()
-    }
+//    override fun onStart() {
+//        super.onStart()
+//        mapView.onStart()
+//    }
+//
+//    override fun onResume() {
+//        super.onResume()
+//        mapView.onResume()
+//    }
+//    override fun onPause() {
+//        super.onPause()
+//        mapView.onPause()
+//    }
+//
+//    override fun onStop() {
+//        super.onStop()
+//        mapView.onStop()
+//    }
+//
+//    override fun onDestroy() {
+//        super.onDestroy()
+//        mapView.onDestroy()
+//    }
+//
+//    override fun onLowMemory() {
+//        super.onLowMemory()
+//        mapView.onLowMemory()
+//    }
 
     //display location on the map,add marker at the current location
-    private fun updateMarker( location: LatLng){
+    private fun updateMarker(location: LatLng){
         googleMap.clear()
 
+        var khayelitsha = LatLng(-34.049461, 18.648170)
         val markerOptions = MarkerOptions()
-            .position(location)
+            .position(khayelitsha)
             .title("Current Location")
             .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
         googleMap.addMarker(markerOptions)
@@ -152,8 +170,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val locationCallback = object : LocationCallback() {
-        override fun onLocationResult(locationResult: LocationResult?) {
-            locationResult?.lastLocation?.let { location ->
+        override fun onLocationResult(locationResult: LocationResult) {
+            locationResult.lastLocation?.let { location ->
 
                 val latLng = LatLng(location.latitude, location.longitude)
                 updateMarker(latLng)
@@ -161,8 +179,21 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onMapReady(googleMap: GoogleMap) {
+        mMap = googleMap
+
+        // Add a marker in any Location and move camera
+        val myLocation = LatLng(-34.049461,18.648170)
+        val marker = MarkerOptions().position(myLocation).title("Sabelo ubaleke eTransnet")
+        // zoom level
+        var zoomLevel = 15f
 
 
+        mMap.addMarker(marker)
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(myLocation, zoomLevel))
+        // default way without specifying zoom level
+        //  mMap.moveCamera(CameraUpdateFactory.newLatLng(myLocation))
 
+    }
 
 }
