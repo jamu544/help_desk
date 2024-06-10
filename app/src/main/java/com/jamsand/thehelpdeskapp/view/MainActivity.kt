@@ -194,6 +194,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         // default way without specifying zoom level
         //  mMap.moveCamera(CameraUpdateFactory.newLatLng(myLocation))
 
+        // testing gitignore
+
     }
 
 }

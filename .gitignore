@@ -1,0 +1,15 @@
+# Gradle files
+.gradle/
+build/
+
+
+# Generated files
+bin/
+gen/
+out
+
+### Android ###
+# Built application files
+*.apk
+*.ap_
+*.aab
