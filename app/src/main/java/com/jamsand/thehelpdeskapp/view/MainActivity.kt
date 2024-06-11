@@ -2,12 +2,14 @@ package com.jamsand.thehelpdeskapp.view
 
 import android.Manifest
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.location.Location
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Looper
 import android.telecom.TelecomManager.EXTRA_LOCATION
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -51,6 +53,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        val ai: ApplicationInfo = applicationContext.packageManager
+            .getApplicationInfo(applicationContext.packageName, PackageManager.GET_META_DATA)
+        val value = ai.metaData["com.google.android.PLACES_KEY"]
+
+        val key = value.toString()
+        Toast.makeText(applicationContext, key,Toast.LENGTH_LONG).show()
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
