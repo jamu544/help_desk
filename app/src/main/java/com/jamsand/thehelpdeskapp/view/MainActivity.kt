@@ -1,17 +1,16 @@
 package com.jamsand.thehelpdeskapp.view
 
 import android.Manifest
-import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.drawable.Drawable
 import android.location.Location
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Looper
+import android.telecom.TelecomManager.EXTRA_LOCATION
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -19,10 +18,8 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
@@ -46,7 +43,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     // last location to create a Notification if the user navigates away from the app.
     private var currentLocation: Location? = null
 
-//    private lateinit var mapView: MapView
+    // private lateinit var mapView: MapView
     private lateinit var googleMap: GoogleMap
 
     private lateinit var mMap: GoogleMap
@@ -55,7 +52,44 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        requestLocationPermission()
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        locationRequest = LocationRequest.create().apply {
+            interval = 1000
+
+            //sets the fastest rate for active location updates
+            fastestInterval = 500
+
+            // sets the maximum time when batched location updates are delivered
+            maxWaitTime  = java.util.concurrent.TimeUnit.SECONDS.toMillis(2)
+
+            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        }
+
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult) {
+                super.onLocationResult(locationResult)
+
+                // save new location to a database. for this(save to local database), as we need it
+                // again if a Notification is created(when the user navigates away from the app).
+                currentLocation = locationResult.lastLocation
+
+                //notify activity that a new location was added. Again, if this was a
+                // production app, the Activity would be listening for changes to a database
+                // with new locations,
+
+                val intent = Intent(Intent.ACTION_USER_FOREGROUND)
+                    intent.putExtra(EXTRA_LOCATION,currentLocation)
+
+                LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
+
+                //updates notification content if this service is running as a foreground service
+
+
+
+            }
+        }
+       // requestLocationPermission()
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
@@ -87,15 +121,15 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     // request permission if not granted
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        if(requestCode == REQUEST_CODE_LOCATION_PERMISSION && grantResults.isNotEmpty() &&
-            grantResults[0] == PackageManager.PERMISSION_GRANTED)
-            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-    }
+//    override fun onRequestPermissionsResult(
+//        requestCode: Int,
+//        permissions: Array<out String>,
+//        grantResults: IntArray
+//    ) {
+//        if(requestCode == REQUEST_CODE_LOCATION_PERMISSION && grantResults.isNotEmpty() &&
+//            grantResults[0] == PackageManager.PERMISSION_GRANTED)
+//            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+//    }
 
     // retrieve the devices's last known location
     private fun initLocationClient(){
@@ -198,14 +232,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         mMap = googleMap
 
         // Add a marker in any Location and move camera
-        val myLocation = LatLng(-34.049461,18.648170)
-        val marker = MarkerOptions().position(myLocation).title("Sabelo ubaleke eTransnet")
+        val locationCoordinates = LatLng(-34.049461,18.648170)
+        val marker = MarkerOptions().position(locationCoordinates).title("Sabelo ubaleke eTransnet")
         // zoom level
         var zoomLevel = 15f
 
 
         mMap.addMarker(marker)
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(myLocation, zoomLevel))
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(locationCoordinates, zoomLevel))
         // default way without specifying zoom level
         //  mMap.moveCamera(CameraUpdateFactory.newLatLng(myLocation))
 
