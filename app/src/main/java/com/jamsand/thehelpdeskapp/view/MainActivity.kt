@@ -4,11 +4,15 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.location.Location
+import android.os.AsyncTask
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Looper
 import android.telecom.TelecomManager.EXTRA_LOCATION
+import android.util.Log
+import android.widget.Button
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -25,7 +29,14 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.PolylineOptions
+import com.google.android.libraries.places.api.Places
+import com.google.gson.Gson
+import com.jamsand.thehelpdeskapp.BuildConfig
 import com.jamsand.thehelpdeskapp.R
+import com.jamsand.thehelpdeskapp.model.MapData
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -48,7 +59,17 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     // private lateinit var mapView: MapView
     private lateinit var googleMap: GoogleMap
 
-    private lateinit var mMap: GoogleMap
+    private lateinit var map: GoogleMap
+
+    //for testing purposes get 2 coordinates
+    // manually created declared two places
+
+    private var originLatitude: Double = 28.50213593
+    private var originLongitude: Double = 77.4054901
+
+    private var destinationLatitude: Double = 28.5151087
+    private var destinationLongitude: Double = 77.3932163
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,6 +81,43 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
         val key = value.toString()
         Toast.makeText(applicationContext, key,Toast.LENGTH_LONG).show()
+
+        // Define a variable to hold the Places API key.
+        val apiKey = BuildConfig.PLACES_API_KEY
+
+        // Log an error if apiKey is not set
+        if (apiKey.isEmpty() || apiKey == "DEFAULT_API_KEY"){
+            Toast.makeText(applicationContext, "NO API KEY",Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+
+        // validate key
+        if (!Places.isInitialized()) {
+            Places.initializeWithNewPlacesApiEnabled(applicationContext, apiKey)
+        }
+        // Create a new PlacesClient instance
+        val placesClient = Places.createClient(this)
+        // requestLocationPermission()
+        val mapFragment = supportFragmentManager
+            .findFragmentById(R.id.map) as SupportMapFragment
+        mapFragment.getMapAsync(this)
+
+        val gd = findViewById<Button>(R.id.directions)
+        gd.setOnClickListener {
+            mapFragment.getMapAsync {
+                map = it
+                val originLocation = LatLng(originLatitude, originLongitude)
+                map.addMarker(MarkerOptions().position(originLocation))
+                val destinationLocation = LatLng(destinationLatitude, destinationLongitude)
+                map.addMarker(MarkerOptions().position(destinationLocation).title("ODWA"))
+                val urll = getDirectionURL(originLocation, destinationLocation, apiKey)
+                GetDirection(urll).execute()
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(originLocation, 14F))
+            }
+        }
+
+
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
@@ -88,7 +146,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 // with new locations,
 
                 val intent = Intent(Intent.ACTION_USER_FOREGROUND)
-                    intent.putExtra(EXTRA_LOCATION,currentLocation)
+                intent.putExtra(EXTRA_LOCATION, currentLocation)
 
                 LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
 
@@ -98,24 +156,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
             }
         }
-       // requestLocationPermission()
-        val mapFragment = supportFragmentManager
-            .findFragmentById(R.id.map) as SupportMapFragment
-        mapFragment.getMapAsync(this)
-
-
-
-//        initLocationClient()
-//        mapView = findViewById(R.id.mapView)
-//        mapView.onCreate(savedInstanceState)
-//        mapView.getMapAsync{ google ->
-        // Map is ready, do something with the map
-//        }
 
     }
 
     //check user has permission is granted
-    private fun requestLocationPermission(){
+    private fun requestLocationPermission() {
         if (ContextCompat.checkSelfPermission(
                 this,
                 android.Manifest.permission.ACCESS_FINE_LOCATION
@@ -141,7 +186,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 //    }
 
     // retrieve the devices's last known location
-    private fun initLocationClient(){
+    private fun initLocationClient() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
     }
 
@@ -215,7 +260,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 //    }
 
     //display location on the map,add marker at the current location
-    private fun updateMarker(location: LatLng){
+    private fun updateMarker(location: LatLng) {
         googleMap.clear()
 
         var khayelitsha = LatLng(-34.049461, 18.648170)
@@ -238,22 +283,91 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 //    }
 
     override fun onMapReady(googleMap: GoogleMap) {
-        mMap = googleMap
+        map = googleMap
 
         // Add a marker in any Location and move camera
-        val locationCoordinates = LatLng(-34.049461,18.648170)
-        val marker = MarkerOptions().position(locationCoordinates).title("Sabelo ubaleke eTransnet")
-        // zoom level
-        var zoomLevel = 15f
+        val originLocation = LatLng(originLatitude, originLongitude)
+        map.clear()
+        map.addMarker(MarkerOptions().position(originLocation).title("Sabelo ubaleke eTransnet"))
+        map.animateCamera(CameraUpdateFactory.newLatLngZoom(originLocation, 18F))
+    }
 
+    // generate the direction URL
+    private fun getDirectionURL(origin: LatLng, dest: LatLng, secret: String): String {
+        return "https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}" +
+                "&destination=${dest.latitude},${dest.longitude}" +
+                "&sensor=false" +
+                "&mode=driving" +
+                "&key=$secret"
+    }
 
-        mMap.addMarker(marker)
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(locationCoordinates, zoomLevel))
-        // default way without specifying zoom level
-        //  mMap.moveCamera(CameraUpdateFactory.newLatLng(myLocation))
+    //A polyline is a list of points, where line segments are drawn between consecutive points
+    // Decode Polyline
+    fun decodePolyline(encoded: String): List<LatLng> {
+        val poly = ArrayList<LatLng>()
+        var index = 0
+        val len = encoded.length
+        var lat = 0
+        var lng = 0
 
-        // testing gitignore
+        while (index < len) {
+            var b: Int
+            var shift = 0
+            var result = 0
+
+            do {
+                b = encoded[index++].code - 63
+                result = result or (b and 0x1f shl shift)
+                shift += 5
+
+            } while (b >= 0x20)
+            val dlng = if (result and 1 != 0) (result shr 1).inv() else result shr 1
+            lng += dlng
+            val latLng = LatLng((lat.toDouble() / 1E5), (lng.toDouble() / 1E5))
+            poly.add(latLng)
+        }
+        return poly
+    }
+
+    // create inner class to pass the URL string generated
+    @Suppress("StaticFieldLeak")
+    private inner class GetDirection(val url : String) : AsyncTask<Void, Void, List<List<LatLng>>>(){
+        override fun doInBackground(vararg params: Void?): List<List<LatLng>> {
+
+            val client = OkHttpClient()
+            val request = Request.Builder().url(url).build()
+            val response = client.newCall(request).execute()
+            val data = response.body!!.string()
+
+            val result =  ArrayList<List<LatLng>>()
+            try{
+                val respObj = Gson().fromJson(data,MapData::class.java)
+                val path =  ArrayList<LatLng>()
+                for (i in 0 until respObj.routes[0].legs[0].steps.size){
+                    path.addAll(decodePolyline(respObj.routes[0].legs[0].steps[i].polyline.points))
+                }
+                result.add(path)
+            }catch (e:Exception){
+                e.printStackTrace()
+            }
+            return result
+        }
+
+        @Deprecated("Deprecated in Java")
+        override fun onPostExecute(result: List<List<LatLng>>) {
+            val lineoption = PolylineOptions()
+            for (i in result.indices) {
+                lineoption.addAll(result[i])
+                lineoption.width(10f)
+                lineoption.color(Color.GREEN)
+                lineoption.geodesic(true)
+            }
+            map.addPolyline(lineoption)
+            Log.i("Checking Route on Post ", result.toString())
+        }
 
     }
+
+
 
 }

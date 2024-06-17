@@ -38,8 +38,26 @@ android {
     kotlinOptions {
         jvmTarget = '17'
     }
+
+    secrets {
+// Optionally specify a different file name containing your secrets.
+        // The plugin defaults to "local.properties"
+        propertiesFileName = "secrets.properties"
+
+        // A properties file containing default secret values. This file can be
+        // checked in version control.
+        defaultPropertiesFileName = "local.properties"
+
+        // Configure which keys should be ignored by the plugin by providing regular expressions.
+        // "sdk.dir" is ignored by default.
+        ignoreList.add("keyToIgnore") // Ignore the key "keyToIgnore"
+        ignoreList.add("sdk.*")       // Ignore all keys matching the regexp "sdk.*"
+    }
+    buildFeatures {
+        buildConfig = true
     }
 
+}
 dependencies {
     // For Map fragment
     implementation 'com.google.android.libraries.places:places:3.5.0'
@@ -60,21 +78,21 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-
-
-
-
-    implementation 'com.pusher:pusher-java-client:1.5.0'
-
-
-
-
+    // with the compose versions.
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    // KTX for the Maps SDK for Android library
+    implementation("com.google.maps.android:maps-ktx:5.0.0")
+    // KTX for the Maps SDK for Android Utility Library
+    implementation("com.google.maps.android:maps-utils-ktx:5.0.0")
     implementation 'com.squareup.retrofit2:retrofit:2.3.0'
-
     implementation 'com.squareup.retrofit2:converter-scalars:2.3.0'
-
     implementation 'com.squareup.retrofit2:converter-gson:2.3.0'
-
+    // Google Maps Compose library
+    implementation("com.google.maps.android:maps-compose:4.4.1")
+    // Google Maps Compose utility library
+    implementation("com.google.maps.android:maps-compose-utils:4.4.1")
+    // Google Maps Compose widgets library
+    implementation("com.google.maps.android:maps-compose-widgets:4.4.1")
 
 
 }
