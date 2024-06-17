@@ -285,11 +285,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
 
+        // zoom level
+        val zoomLevel = 18F
         // Add a marker in any Location and move camera
         val originLocation = LatLng(originLatitude, originLongitude)
         map.clear()
         map.addMarker(MarkerOptions().position(originLocation).title("Sabelo ubaleke eTransnet"))
-        map.animateCamera(CameraUpdateFactory.newLatLngZoom(originLocation, 18F))
+        map.animateCamera(CameraUpdateFactory.newLatLngZoom(originLocation, zoomLevel))
     }
 
     // generate the direction URL
@@ -366,6 +368,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             Log.i("Checking Route on Post ", result.toString())
         }
 
+    }
+
+    //check is permissions are granted
+    private fun isPermissionGranted(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
     }
 
 
