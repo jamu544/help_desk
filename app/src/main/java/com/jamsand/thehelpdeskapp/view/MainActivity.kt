@@ -104,18 +104,19 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         mapFragment.getMapAsync(this)
 
         val gd = findViewById<Button>(R.id.directions)
-        gd.setOnClickListener {
-            mapFragment.getMapAsync {
-                map = it
-                val originLocation = LatLng(originLatitude, originLongitude)
-                map.addMarker(MarkerOptions().position(originLocation))
-                val destinationLocation = LatLng(destinationLatitude, destinationLongitude)
-                map.addMarker(MarkerOptions().position(destinationLocation).title("ODWA"))
-                val urll = getDirectionURL(originLocation, destinationLocation, apiKey)
-                GetDirection(urll).execute()
-                map.animateCamera(CameraUpdateFactory.newLatLngZoom(originLocation, 14F))
-            }
-        }
+//        gd.setOnClickListener {
+//            mapFragment.getMapAsync {
+//                map = it
+//                val originLocation = LatLng(originLatitude, originLongitude)
+//                map.addMarker(MarkerOptions().position(originLocation))
+//                val destinationLocation = LatLng(destinationLatitude, destinationLongitude)
+//                map.addMarker(MarkerOptions().position(destinationLocation).title("ODWA"))
+//                val urll = getDirectionURL(originLocation, destinationLocation, apiKey)
+//                GetDirection(urll).execute()
+//                map.animateCamera(CameraUpdateFactory.newLatLngZoom(originLocation, 14F))
+//                enableMyLocation()
+//            }
+//        }
 
 
 
@@ -175,15 +176,16 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     // request permission if not granted
-//    override fun onRequestPermissionsResult(
-//        requestCode: Int,
-//        permissions: Array<out String>,
-//        grantResults: IntArray
-//    ) {
-//        if(requestCode == REQUEST_CODE_LOCATION_PERMISSION && grantResults.isNotEmpty() &&
-//            grantResults[0] == PackageManager.PERMISSION_GRANTED)
-//            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-//    }
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        if(requestCode == REQUEST_CODE_LOCATION_PERMISSION && grantResults.isNotEmpty() &&
+            grantResults[0] == PackageManager.PERMISSION_GRANTED)
+            enableMyLocation()
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
 
     // retrieve the devices's last known location
     private fun initLocationClient() {
@@ -292,6 +294,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         map.clear()
         map.addMarker(MarkerOptions().position(originLocation).title("Sabelo ubaleke eTransnet"))
         map.animateCamera(CameraUpdateFactory.newLatLngZoom(originLocation, zoomLevel))
+        enableMyLocation()
+
     }
 
     // generate the direction URL
@@ -375,6 +379,37 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         return ContextCompat.checkSelfPermission(
             this,
             Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    }
+
+    //enable location tracking
+    private fun enableMyLocation() {
+        if (isPermissionGranted()) {
+            if (ActivityCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return
+            }
+            map.isMyLocationEnabled = true
+        }
+        else {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf<String>(Manifest.permission.ACCESS_FINE_LOCATION),
+                REQUEST_CODE_LOCATION_PERMISSION
+            )
+        }
     }
 
 
