@@ -1,26 +1,18 @@
 package com.jamsand.thehelpdeskapp.view
 
-import android.Manifest
-import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.location.Location
 import android.os.AsyncTask
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.os.Looper
-import android.telecom.TelecomManager.EXTRA_LOCATION
 import android.util.Log
-import android.widget.Button
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -28,6 +20,7 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PolylineOptions
 import com.google.android.libraries.places.api.Places
@@ -38,7 +31,8 @@ import com.jamsand.thehelpdeskapp.model.MapData
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
-class MainActivity : AppCompatActivity(), OnMapReadyCallback {
+
+class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerClickListener {
 
     private val REQUEST_CODE_LOCATION_PERMISSION = 1
     //-main class for receiving location updates
@@ -64,11 +58,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     //for testing purposes get 2 coordinates
     // manually created declared two places
 
-    private var originLatitude: Double = 28.50213593
+    private var originLatitude: Double = 28.5021359
     private var originLongitude: Double = 77.4054901
 
     private var destinationLatitude: Double = 28.5151087
     private var destinationLongitude: Double = 77.3932163
+    private lateinit var lastLocation: Location
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -103,134 +98,72 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-        val gd = findViewById<Button>(R.id.directions)
+//        val gd = findViewById<Button>(R.id.directions)
 //        gd.setOnClickListener {
 //            mapFragment.getMapAsync {
 //                map = it
 //                val originLocation = LatLng(originLatitude, originLongitude)
-//                map.addMarker(MarkerOptions().position(originLocation))
+//                map.addMarker(MarkerOptions().position(originLocation).title("SABELO"))
 //                val destinationLocation = LatLng(destinationLatitude, destinationLongitude)
 //                map.addMarker(MarkerOptions().position(destinationLocation).title("ODWA"))
 //                val urll = getDirectionURL(originLocation, destinationLocation, apiKey)
 //                GetDirection(urll).execute()
 //                map.animateCamera(CameraUpdateFactory.newLatLngZoom(originLocation, 14F))
 //                enableMyLocation()
+//                val line = map.addPolyline(
+//                    PolylineOptions()
+//                        .add(LatLng(originLatitude, originLongitude), LatLng(destinationLatitude, destinationLongitude))
+//                        .width(5f)
+//                        .color(Color.RED)
+//                )
+
 //            }
 //        }
 
 
 
+
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        locationRequest = LocationRequest.create().apply {
-            interval = 1000
+    }
 
-            //sets the fastest rate for active location updates
-            fastestInterval = 500
+    // called when the map is ready for use
+    override fun onMapReady(googleMap: GoogleMap) {
+        map = googleMap
+        // enabled zoom controls on the map
+        map.uiSettings.isZoomControlsEnabled = true
+        map.setOnMarkerClickListener(this)
 
-            // sets the maximum time when batched location updates are delivered
-            maxWaitTime  = java.util.concurrent.TimeUnit.SECONDS.toMillis(2)
+//        // zoom level
 
-            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-        }
-
-        locationCallback = object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult) {
-                super.onLocationResult(locationResult)
-
-                // save new location to a database. for this(save to local database), as we need it
-                // again if a Notification is created(when the user navigates away from the app).
-                currentLocation = locationResult.lastLocation
-
-                //notify activity that a new location was added. Again, if this was a
-                // production app, the Activity would be listening for changes to a database
-                // with new locations,
-
-                val intent = Intent(Intent.ACTION_USER_FOREGROUND)
-                intent.putExtra(EXTRA_LOCATION, currentLocation)
-
-                LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
-
-                //updates notification content if this service is running as a foreground service
+//        //  declare bounds object to fit whole route in screen
+//        val LatLongB = LatLngBounds.builder()
+//        // Add a marker in any Location and move camera
+//        var khayelitsha = LatLng(-34.049461, 18.648170)
+//        // val opera = LatLng(-33.9320447,151.1597271)
+//        map.addMarker(MarkerOptions().position(khayelitsha).title("MARKER IN KHAYELITSHA"))
+//        map.moveCamera(CameraUpdateFactory.newLatLngZoom(khayelitsha, zoomLevel))
 
 
-
-            }
-        }
+        setUpMap()
 
     }
 
-    //check user has permission is granted
-    private fun requestLocationPermission() {
-        if (ContextCompat.checkSelfPermission(
-                this,
-                android.Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
-                REQUEST_CODE_LOCATION_PERMISSION
-            )
-        }
-    }
 
     // request permission if not granted
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        if(requestCode == REQUEST_CODE_LOCATION_PERMISSION && grantResults.isNotEmpty() &&
-            grantResults[0] == PackageManager.PERMISSION_GRANTED)
-            enableMyLocation()
-            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-    }
-
-    // retrieve the devices's last known location
-    private fun initLocationClient() {
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-    }
-
-//    private val locationRequest = LocationRequest.create().apply {
-//        interval = 1000 // update interval in milliseconds
-//        fastestInterval = 500 // fastest update interval in milliseconds
-//        priority  = LocationRequest.PRIORITY_HIGH_ACCURACY // location accuracy is priority
-//
+//    override fun onRequestPermissionsResult(
+//        requestCode: Int,
+//        permissions: Array<out String>,
+//        grantResults: IntArray
+//    ) {
+//        if  (requestCode == REQUEST_CODE_LOCATION_PERMISSION && grantResults.isNotEmpty() &&
+//            grantResults[0] == PackageManager.PERMISSION_GRANTED)
+//            enableMyLocation()
+//            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 //    }
 
-    private fun startLocationUpdates() {
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return
-        }
-        // start recieving location updated to save
-        fusedLocationClient.requestLocationUpdates(
-            locationRequest, //update interval
-            locationCallback,// new location update when available
-            Looper.getMainLooper()
-        )
-    }
-//    private val locationCallback = object : LocationCallback() {
-//        override fun onLocationResult(locationResult: LocationResult) {
-//            locationResult?.lastLocation?.let { location ->
-//                //location updates recieved, do something with the location
-//            }
-//        }
-//    }
+
+
 
 //    override fun onStart() {
 //        super.onStart()
@@ -284,28 +217,24 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 //        }
 //    }
 
-    override fun onMapReady(googleMap: GoogleMap) {
-        map = googleMap
 
-        // zoom level
-        val zoomLevel = 18F
-        // Add a marker in any Location and move camera
-        val originLocation = LatLng(originLatitude, originLongitude)
-        map.clear()
-        map.addMarker(MarkerOptions().position(originLocation).title("Sabelo ubaleke eTransnet"))
-        map.animateCamera(CameraUpdateFactory.newLatLngZoom(originLocation, zoomLevel))
-        enableMyLocation()
-
-    }
 
     // generate the direction URL
     private fun getDirectionURL(origin: LatLng, dest: LatLng, secret: String): String {
-        return "https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}" +
+        return "https://maps.googleapis.com/maps/api/directions/json?origin=" +
+                "${origin.latitude},${origin.longitude}" +
                 "&destination=${dest.latitude},${dest.longitude}" +
                 "&sensor=false" +
                 "&mode=driving" +
                 "&key=$secret"
     }
+//    private fun getDirectionURL(from: LatLng, to: LatLng) : String {
+//        val origin  = "origin=" + from.latitude + "," + from.longitude
+//        val dest = "destination=" + to.latitude + "," + to.longitude
+//        val sensor = "sensor=false"
+//        val params = "$origin&$dest&$sensor"
+//        return "https://maps.googleapis.com/maps/api/directions/json?$params"
+//    }
 
     //A polyline is a list of points, where line segments are drawn between consecutive points
     // Decode Polyline
@@ -320,17 +249,17 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             var b: Int
             var shift = 0
             var result = 0
-
             do {
                 b = encoded[index++].code - 63
                 result = result or (b and 0x1f shl shift)
                 shift += 5
-
             } while (b >= 0x20)
-            val dlng = if (result and 1 != 0) (result shr 1).inv() else result shr 1
-            lng += dlng
-            val latLng = LatLng((lat.toDouble() / 1E5), (lng.toDouble() / 1E5))
-            poly.add(latLng)
+            val dlat = if (result and 1 != 0) (result shr 1).inv() else result shr 1
+            lat += dlat
+
+            val p = LatLng(lat.toDouble() / 1E5,
+                lng.toDouble() / 1E5)
+            poly.add(p)
         }
         return poly
     }
@@ -373,45 +302,50 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
     }
+        // called when a marker is clicked or tapped.
+    override fun onMarkerClick(p0: Marker) = false
 
-    //check is permissions are granted
-    private fun isPermissionGranted(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-    }
+        companion object {
+            private const val LOCATION_PERMISSION_REQUEST_CODE = 1
 
-    //enable location tracking
-    private fun enableMyLocation() {
-        if (isPermissionGranted()) {
-            if (ActivityCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
-                return
+        }
+
+    //checks if the app has granted access permission.
+    //if it hasn't, then request it from the user
+    // later to be renamed to  requestLocationPermission()
+    private fun setUpMap(){
+        if (ActivityCompat.checkSelfPermission(this,
+            android.Manifest.permission.ACCESS_FINE_LOCATION) !=
+            PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this,
+                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
+                LOCATION_PERMISSION_REQUEST_CODE
+                )
+        }
+        //zoom level
+        val zoomLevel = 12.0f
+        // enables user location with blue dot
+        map.isMyLocationEnabled = true
+        //set map type
+        map.mapType = GoogleMap.MAP_TYPE_TERRAIN
+        // gives you the most recent location currently available
+        fusedLocationClient.lastLocation.addOnSuccessListener(this) { location ->
+            // got last known location. In some rare situations this can be null
+            //3
+            if (location != null){
+                lastLocation = location
+                val currentLatLng = LatLng(location.latitude, location.longitude)
+                placeMarkerOnMap(currentLatLng)
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng,zoomLevel))
             }
-            map.isMyLocationEnabled = true
-        }
-        else {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf<String>(Manifest.permission.ACCESS_FINE_LOCATION),
-                REQUEST_CODE_LOCATION_PERMISSION
-            )
+
         }
     }
+    //set the user's current locationas the position for the marker
+    private fun placeMarkerOnMap(location: LatLng){
+        val markerOptions = MarkerOptions().position(location)
+        map.addMarker(markerOptions)
 
-
-
+    }
+    // show address of that location when user clicks on the marker
 }
