@@ -3,6 +3,8 @@ package com.jamsand.thehelpdeskapp.view
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.location.Address
+import android.location.Geocoder
 import android.location.Location
 import android.os.AsyncTask
 import android.os.Bundle
@@ -30,6 +32,7 @@ import com.jamsand.thehelpdeskapp.R
 import com.jamsand.thehelpdeskapp.model.MapData
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.IOException
 
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerClickListener {
@@ -348,4 +351,28 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
 
     }
     // show address of that location when user clicks on the marker
+    private fun getAddress(latLng: LatLng): String {
+        //1
+        val geocoder = Geocoder(this)
+        val addresses: List<Address>?
+        val address: Address?
+        var addressText = ""
+
+        try {
+        //2
+            addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude,1)
+
+            //3
+            if (null != addresses && !addresses.isEmpty()) {
+                address = addresses[0]
+                for (i in 0 until address.maxAddressLineIndex) {
+                    addressText += if (i == 0) address.getAddressLine(i) else "\n" +
+                            address.getAddressLine(i)
+                }
+            }
+        } catch (e: IOException) {
+            Log.e("MainActivity", e.localizedMessage)
+        }
+        return addressText
+    }
 }
