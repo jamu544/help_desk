@@ -1,5 +1,8 @@
 package com.jamsand.thehelpdeskapp.view
 
+import android.app.Activity
+import android.content.Intent
+import android.content.IntentSender
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -12,10 +15,16 @@ import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException
+import com.google.android.gms.common.GooglePlayServicesRepairableException
+import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.LocationSettingsRequest
+import com.google.android.gms.location.places.ui.PlacePicker
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -26,6 +35,7 @@ import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PolylineOptions
 import com.google.android.libraries.places.api.Places
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.gson.Gson
 import com.jamsand.thehelpdeskapp.BuildConfig
 import com.jamsand.thehelpdeskapp.R
@@ -47,6 +57,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
 
     // called when FusedLocationProviderClient has a new Location.
     private lateinit var locationCallback: LocationCallback
+
+    private var locationUpdateState = false
 
     //used only for local storage of the last known location. Usually, this would be saved to your
     // database, but because this is a simplified sample without a full database, we only need the
@@ -72,7 +84,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
+        locationRequest = LocationRequest()
         val ai: ApplicationInfo = applicationContext.packageManager
             .getApplicationInfo(applicationContext.packageName, PackageManager.GET_META_DATA)
         val value = ai.metaData["com.google.android.PLACES_KEY"]
@@ -96,37 +108,30 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
         }
         // Create a new PlacesClient instance
         val placesClient = Places.createClient(this)
-        // requestLocationPermission()
+
+
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-//        val gd = findViewById<Button>(R.id.directions)
-//        gd.setOnClickListener {
-//            mapFragment.getMapAsync {
-//                map = it
-//                val originLocation = LatLng(originLatitude, originLongitude)
-//                map.addMarker(MarkerOptions().position(originLocation).title("SABELO"))
-//                val destinationLocation = LatLng(destinationLatitude, destinationLongitude)
-//                map.addMarker(MarkerOptions().position(destinationLocation).title("ODWA"))
-//                val urll = getDirectionURL(originLocation, destinationLocation, apiKey)
-//                GetDirection(urll).execute()
-//                map.animateCamera(CameraUpdateFactory.newLatLngZoom(originLocation, 14F))
-//                enableMyLocation()
-//                val line = map.addPolyline(
-//                    PolylineOptions()
-//                        .add(LatLng(originLatitude, originLongitude), LatLng(destinationLatitude, destinationLongitude))
-//                        .width(5f)
-//                        .color(Color.RED)
-//                )
-
-//            }
-//        }
-
-
 
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(p0: LocationResult) {
+                super.onLocationResult(p0)
+
+                lastLocation = p0.lastLocation!!
+                placeMarkerOnMap(LatLng(lastLocation.latitude, lastLocation.longitude))
+            }
+        }
+        createLocationRequest()
+        val fab = findViewById<FloatingActionButton>(R.id.fab)
+        fab.setOnClickListener {
+            loadPlacePicker()
+            Log.d("FLOAT", "FLOATING")
+        }
 
     }
 
@@ -149,6 +154,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
 
 
         setUpMap()
+        createLocationRequest()
 
     }
 
@@ -173,14 +179,20 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
 //        mapView.onStart()
 //    }
 //
-//    override fun onResume() {
-//        super.onResume()
-//        mapView.onResume()
-//    }
-//    override fun onPause() {
-//        super.onPause()
-//        mapView.onPause()
-//    }
+    //restart location updates
+    override fun onResume() {
+        super.onResume()
+   //     mapView.onResume()
+    if (!locationUpdateState){
+        startLocationUpdates()
+    }
+    }
+    //stop location updates
+    override fun onPause() {
+        super.onPause()
+    //    mapView.onPause()
+    fusedLocationClient.removeLocationUpdates(locationCallback)
+    }
 //
 //    override fun onStop() {
 //        super.onStop()
@@ -310,6 +322,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
 
         companion object {
             private const val LOCATION_PERMISSION_REQUEST_CODE = 1
+            private const val REQUEST_CHECK_SETTINGS = 2
+            private const val PLACE_PICKER_REQUEST = 3
 
         }
 
@@ -347,22 +361,26 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
     //set the user's current locationas the position for the marker
     private fun placeMarkerOnMap(location: LatLng){
         val markerOptions = MarkerOptions().position(location)
+
+        val titleStr = getAddress(location)
+        markerOptions.title(titleStr)
+
         map.addMarker(markerOptions)
 
     }
     // show address of that location when user clicks on the marker
     private fun getAddress(latLng: LatLng): String {
-        //1
+        //geocoder to turn object to turn lat/lng into address and vice versa
         val geocoder = Geocoder(this)
         val addresses: List<Address>?
         val address: Address?
         var addressText = ""
 
         try {
-        //2
+        //  get address from the location
             addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude,1)
 
-            //3
+            //
             if (null != addresses && !addresses.isEmpty()) {
                 address = addresses[0]
                 for (i in 0 until address.maxAddressLineIndex) {
@@ -375,4 +393,88 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
         }
         return addressText
     }
+
+
+    private fun startLocationUpdates(){
+        // if permission has not been granted, request it now and return
+        if (ActivityCompat.checkSelfPermission( this,
+            android.Manifest.permission.ACCESS_FINE_LOCATION) !=
+            PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions( this,
+                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
+                LOCATION_PERMISSION_REQUEST_CODE)
+            return
+        }
+        // if theres permission, request for location updates
+        fusedLocationClient.requestLocationUpdates(locationRequest,
+            locationCallback, null)
+    }
+
+    private fun createLocationRequest() {
+        // retrieve and handle any changes to be made based on current state of the user location
+        locationRequest = LocationRequest()
+
+        locationRequest.interval = 10000 //rate which the app will like to receive updates
+        //3
+        locationRequest.fastestInterval = 5000 //specifies the fastest rate at which the app can handle updates
+        locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+
+        val builder = LocationSettingsRequest.Builder()
+            .addLocationRequest(locationRequest)
+
+        // create s settings client and a task to check location settings
+        val client = LocationServices.getSettingsClient(this)
+        val task = client.checkLocationSettings(builder.build())
+
+        // success task means all is well and you can go ahead and initiate a location request
+        task.addOnSuccessListener {
+            locationUpdateState = true
+            startLocationUpdates()
+        }
+
+        task.addOnSuccessListener { e ->
+            // on failure means location could be turned off
+            if (e is ResolvableApiException) {
+                //Location settings are not satisfied, but this can be fixed by showing the user dialog
+                try {
+                    //show the dialog by calling startResolutionForResult(),
+                    //and check the result in onActivityResult()
+                    e.startResolutionForResult(this@MainActivity,
+                        REQUEST_CHECK_SETTINGS
+                        )
+                } catch (sendEx: IntentSender.SendIntentException) {
+                    //ignore Error
+                }
+            }
+        }
+
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_CHECK_SETTINGS){
+            if (resultCode == Activity.RESULT_OK){
+               val place = PlacePicker.getPlace(this,data)
+                var addressText = place.name.toString()
+                addressText += "\n" + place.address.toString()
+
+                placeMarkerOnMap(place.latLng)
+            }
+        }
+    }
+    private fun loadPlacePicker(){
+        val builder = PlacePicker.IntentBuilder()
+
+        try {
+            startActivityForResult(builder.build(this@MainActivity),
+                PLACE_PICKER_REQUEST
+                )
+        }catch (e: GooglePlayServicesRepairableException) {
+            e.printStackTrace()
+        } catch (e: GooglePlayServicesNotAvailableException) {
+            e.printStackTrace()
+        }
+    }
+
+
 }
