@@ -30,6 +30,7 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
@@ -79,6 +80,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
     private var destinationLatitude: Double = 28.5151087
     private var destinationLongitude: Double = 77.3932163
     private lateinit var lastLocation: Location
+
+
+    //new code
+    private lateinit var defaultLocation: LatLng
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -340,7 +345,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
                 )
         }
         //zoom level
-        val zoomLevel = 12.0f
+        val zoomLevel = 15.5f
         // enables user location with blue dot
         map.isMyLocationEnabled = true
         //set map type
@@ -474,6 +479,28 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
         } catch (e: GooglePlayServicesNotAvailableException) {
             e.printStackTrace()
         }
+    }
+    // onMapReady for new code
+    //override
+    private fun onMapReady2(googleMap: GoogleMap) {
+        this.map = googleMap
+        defaultLocation = LatLng(28.435350000000003,77.11368)
+        displayDefaultLocation(defaultLocation)
+    }
+
+    //repositioning the camera to some lat and long
+    private fun moveView(ll: LatLng){
+        map.moveCamera(CameraUpdateFactory.newLatLng(ll))
+    }
+    //animate  the movement of the camera from the current to new position
+    private fun animateView(ll: LatLng){
+        val cameraPosition = CameraPosition.Builder().target(ll).zoom(15.5f).build()
+        map.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition))
+    }
+    //display default location
+    private fun displayDefaultLocation(ll: LatLng){
+        moveView(ll)
+        animateView(ll)
     }
 
 
