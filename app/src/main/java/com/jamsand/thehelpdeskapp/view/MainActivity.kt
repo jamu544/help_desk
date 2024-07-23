@@ -18,7 +18,9 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.util.Log
+import android.view.View
 import android.widget.Button
+import android.widget.EditText
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
@@ -99,6 +101,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
 
     val apiKey = BuildConfig.PLACES_API_KEY
     var currentLocationIndia: LatLng = LatLng(20.5, 78.9)
+    @SuppressLint("SuspiciousIndentation")
     @RequiresApi(Build.VERSION_CODES.P)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -132,7 +135,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
-
 
         // initializing fused location client
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
@@ -171,11 +173,15 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
                     } else {
                         currentLocationIndia = LatLng(location.latitude, location.longitude)
                         map.clear()
-                        map.addMarker(MarkerOptions().position(currentLocationIndia))
+                        map.addMarker(
+                            MarkerOptions().position(currentLocationIndia)
+                                .title("Odwa")
+                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_car)) //set icon size
+                        )
                         map.animateCamera(
                             CameraUpdateFactory.newLatLngZoom(
                                 currentLocationIndia,
-                                16F
+                                18F
                             )
                         )
 
@@ -259,7 +265,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
         map = googleMap
         // enabled zoom controls on the map
         map.uiSettings.isZoomControlsEnabled = true
-        map.setOnMarkerClickListener(this)
+
 
 //        // zoom level
 
@@ -513,18 +519,19 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
 
     // onMapReady for new code
     //override
+    @RequiresApi(Build.VERSION_CODES.P)
     override fun onMapReady(googleMap: GoogleMap) {
         this.map = googleMap
 //       defaultLocation = LatLng(28.435350000000003, 77.11368)
 //        displayDefaultLocation(defaultLocation)
 //        displayPath(MapUtils.getLocations())
 //        displayMovingCar(MapUtils.getLocations())
-        val originLocation = LatLng(originLatitude, originLongitude)
-        map.addMarker(MarkerOptions().position(originLocation))
-        val destinationLocation = LatLng(destinationLatitude, destinationLongitude)
-        map.addMarker(MarkerOptions().position(destinationLocation))
-        map.animateCamera(CameraUpdateFactory.newLatLngZoom(originLocation, 15F))
-
+//        val originLocation = LatLng(originLatitude, originLongitude)
+//        map.addMarker(MarkerOptions().position(originLocation))
+//        val destinationLocation = LatLng(destinationLatitude, destinationLongitude)
+//        map.addMarker(MarkerOptions().position(destinationLocation))
+//        map.animateCamera(CameraUpdateFactory.newLatLngZoom(originLocation, 15F))
+                getLastLocation()
     }
 
     //repositioning the camera to some lat and long
@@ -646,6 +653,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
 
             }
         }
+    }
+
+    private fun searchLocation(view: View){
+        val locationSearch: EditText = findViewById(R.id.searchEditText)
+        var location: String
+        location = locationSearch.text.toString()
+        var addressList: List<Address>
+
     }
 
 }

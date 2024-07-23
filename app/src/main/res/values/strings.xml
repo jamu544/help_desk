@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">The Help Desk App</string>
+    <string name="recenter">RECENTER</string>
+    <string name="search_location">Search Location</string>
 </resources>
