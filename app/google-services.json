@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "936840673181",
+    "project_id": "the-help-desk-app-edc66",
+    "storage_bucket": "the-help-desk-app-edc66.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:936840673181:android:4eeec528fcb37c5ed6a174",
+        "android_client_info": {
+          "package_name": "com.jamsand.thehelpdeskapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyARcC_Ll6SHbuKDgmR7kCh6qCXiE62fVsE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

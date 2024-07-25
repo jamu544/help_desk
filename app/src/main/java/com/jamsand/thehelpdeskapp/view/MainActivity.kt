@@ -19,7 +19,6 @@ import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.view.View
-import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -45,6 +44,8 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.libraries.places.api.Places
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
 import com.jamsand.thehelpdeskapp.BuildConfig
 import com.jamsand.thehelpdeskapp.R
 import com.jamsand.thehelpdeskapp.utils.AnimationUtils
@@ -139,10 +140,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
         // initializing fused location client
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        val buton = findViewById<Button>(R.id.fab)
-            buton.setOnClickListener {
-                getLastLocation()
-            }
+//        val buton = findViewById<Button>(R.id.fab)
+//            buton.setOnClickListener {
+
+ //           }
 
 //        locationCallback = object : LocationCallback() {
 //            override fun onLocationResult(p0: LocationResult) {
@@ -172,10 +173,16 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
                         requestNewLocationData()
                     } else {
                         currentLocationIndia = LatLng(location.latitude, location.longitude)
+                        // reference to the database
+                        val database: FirebaseDatabase = FirebaseDatabase.getInstance()
+                        val ref: DatabaseReference = database.getReference("test")
+
+
+
                         map.clear()
                         map.addMarker(
                             MarkerOptions().position(currentLocationIndia)
-                                .title("Odwa")
+                                .title("You are currently here!")
                                 .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_car)) //set icon size
                         )
                         map.animateCamera(
@@ -184,7 +191,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
                                 18F
                             )
                         )
-
+                            ref.setValue(currentLocationIndia)
                     }
 
                 }
@@ -519,19 +526,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
 
     // onMapReady for new code
     //override
+    @SuppressLint("SuspiciousIndentation")
     @RequiresApi(Build.VERSION_CODES.P)
     override fun onMapReady(googleMap: GoogleMap) {
         this.map = googleMap
-//       defaultLocation = LatLng(28.435350000000003, 77.11368)
-//        displayDefaultLocation(defaultLocation)
-//        displayPath(MapUtils.getLocations())
-//        displayMovingCar(MapUtils.getLocations())
-//        val originLocation = LatLng(originLatitude, originLongitude)
-//        map.addMarker(MarkerOptions().position(originLocation))
-//        val destinationLocation = LatLng(destinationLatitude, destinationLongitude)
-//        map.addMarker(MarkerOptions().position(destinationLocation))
-//        map.animateCamera(CameraUpdateFactory.newLatLngZoom(originLocation, 15F))
-                getLastLocation()
+        getLastLocation()
     }
 
     //repositioning the camera to some lat and long
@@ -659,7 +658,27 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
         val locationSearch: EditText = findViewById(R.id.searchEditText)
         var location: String
         location = locationSearch.text.toString()
-        var addressList: List<Address>
+        var addressList: List<Address>? = null
+
+        if (location == null || location == "") {
+            Toast.makeText(applicationContext, "provide location", Toast.LENGTH_SHORT).show()
+
+        } else {
+            val geoCoder = Geocoder(this)
+            try {
+                addressList = geoCoder.getFromLocationName(location,1)!!
+            } catch (e: IOException){
+                e.printStackTrace()
+            }
+
+            val address = addressList?.get(0)
+            val latLng = LatLng(address!!.latitude, address.longitude)
+            map.addMarker(MarkerOptions().position(latLng).title(location))
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15F))
+            Toast.makeText(applicationContext,
+                address.latitude.toString()+ "" + address.longitude,
+                Toast.LENGTH_SHORT).show()
+        }
 
     }
 
