@@ -24,8 +24,6 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import com.google.android.gms.common.GooglePlayServicesNotAvailableException
-import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -140,26 +138,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
         // initializing fused location client
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-//        val buton = findViewById<Button>(R.id.fab)
-//            buton.setOnClickListener {
-
- //           }
-
-//        locationCallback = object : LocationCallback() {
-//            override fun onLocationResult(p0: LocationResult) {
-//                super.onLocationResult(p0)
-//
-//                lastLocation = p0.lastLocation!!
-//                placeMarkerOnMap(LatLng(lastLocation.latitude, lastLocation.longitude))
-//            }
-//        }
-//        createLocationRequest()
-//        val fab = findViewById<FloatingActionButton>(R.id.fab)
-//        fab.setOnClickListener {
-//            loadPlacePicker()
-//            Log.d("FLOAT", "FLOATING")
-//        }
-
+        getLastLocation()
     }
     // get current location
     @RequiresApi(Build.VERSION_CODES.P)
@@ -267,56 +246,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
 
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
-    // called when the map is ready for use
-    private fun onMapReady2(googleMap: GoogleMap) {
-        map = googleMap
-        // enabled zoom controls on the map
-        map.uiSettings.isZoomControlsEnabled = true
-
-
-//        // zoom level
-
-//        //  declare bounds object to fit whole route in screen
-//        val LatLongB = LatLngBounds.builder()
-//        // Add a marker in any Location and move camera
-//        var khayelitsha = LatLng(-34.049461, 18.648170)
-//        // val opera = LatLng(-33.9320447,151.1597271)
-//        map.addMarker(MarkerOptions().position(khayelitsha).title("MARKER IN KHAYELITSHA"))
-//        map.moveCamera(CameraUpdateFactory.newLatLngZoom(khayelitsha, zoomLevel))
-
-
-        setUpMap()
-        createLocationRequest()
-
-    }
-
-
-    // request permission if not granted
-//    override fun onRequestPermissionsResult(
-//        requestCode: Int,
-//        permissions: Array<out String>,
-//        grantResults: IntArray
-//    ) {
-//        if  (requestCode == REQUEST_CODE_LOCATION_PERMISSION && grantResults.isNotEmpty() &&
-//            grantResults[0] == PackageManager.PERMISSION_GRANTED)
-//            enableMyLocation()
-//            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-//    }
-
-
-    //    override fun onStart() {
-//        super.onStart()
-//        mapView.onStart()
-//    }
-//
-    //restart location updates
-//    override fun onResume() {
-//        super.onResume()
-//        //     mapView.onResume()
-//        if (!locationUpdateState) {
-//            startLocationUpdates()
-//        }
-//    }
 
     //stop location updates
     override fun onPause() {
@@ -325,28 +254,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
         mFusedLocationClient.removeLocationUpdates(mLocationCallback)
     }
 
-    //display location on the map,add marker at the current location
-//    private fun updateMarker(location: LatLng) {
-//        googleMap.clear()
-//
-//        var khayelitsha = LatLng(-34.049461, 18.648170)
-//        val markerOptions = MarkerOptions()
-//            .position(khayelitsha)
-//            .title("Current Location")
-//            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
-//        googleMap.addMarker(markerOptions)
-//
-//    }
-
-//    private val locationCallback = object : LocationCallback() {
-//        override fun onLocationResult(locationResult: LocationResult) {
-//            locationResult.lastLocation?.let { location ->
-//
-//                val latLng = LatLng(location.latitude, location.longitude)
-//                updateMarker(latLng)
-//            }
-//        }
-//    }
 
     // called when a marker is clicked or tapped.
     override fun onMarkerClick(p0: Marker) = false
@@ -356,42 +263,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
         private const val REQUEST_CHECK_SETTINGS = 2
         private const val PLACE_PICKER_REQUEST = 3
 
-    }
-
-    //checks if the app has granted access permission.
-    //if it hasn't, then request it from the user
-    // later to be renamed to  requestLocationPermission()
-    private fun setUpMap() {
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                android.Manifest.permission.ACCESS_FINE_LOCATION
-            ) !=
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
-                LOCATION_PERMISSION_REQUEST_CODE
-            )
-        }
-        //zoom level
-        val zoomLevel = 15.5f
-        // enables user location with blue dot
-        map.isMyLocationEnabled = true
-        //set map type
-        map.mapType = GoogleMap.MAP_TYPE_TERRAIN
-        // gives you the most recent location currently available
-        mFusedLocationClient.lastLocation.addOnSuccessListener(this) { location ->
-            // got last known location. In some rare situations this can be null
-            //3
-            if (location != null) {
-                lastLocation = location
-                val currentLatLng = LatLng(location.latitude, location.longitude)
-                placeMarkerOnMap(currentLatLng)
-                map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, zoomLevel))
-            }
-
-        }
     }
 
     //set the user's current locationas the position for the marker
@@ -431,28 +302,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
         return addressText
     }
 
-
-//    private fun startLocationUpdates() {
-//        // if permission has not been granted, request it now and return
-//        if (ActivityCompat.checkSelfPermission(
-//                this,
-//                android.Manifest.permission.ACCESS_FINE_LOCATION
-//            ) !=
-//            PackageManager.PERMISSION_GRANTED
-//        ) {
-//            ActivityCompat.requestPermissions(
-//                this,
-//                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
-//                LOCATION_PERMISSION_REQUEST_CODE
-//            )
-//            return
-//        }
-//        // if theres permission, request for location updates
-//        mFusedLocationClient.requestLocationUpdates(
-//            locationRequest,
-//            mLocationCallback, null
-//        )
-//    }
 
     private fun createLocationRequest() {
         // retrieve and handle any changes to be made based on current state of the user location
@@ -509,22 +358,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
         }
     }
 
-    private fun loadPlacePicker() {
-        val builder = PlacePicker.IntentBuilder()
-
-        try {
-            startActivityForResult(
-                builder.build(this@MainActivity),
-                PLACE_PICKER_REQUEST
-            )
-        } catch (e: GooglePlayServicesRepairableException) {
-            e.printStackTrace()
-        } catch (e: GooglePlayServicesNotAvailableException) {
-            e.printStackTrace()
-        }
-    }
-
-    // onMapReady for new code
+     // onMapReady for new code
     //override
     @SuppressLint("SuspiciousIndentation")
     @RequiresApi(Build.VERSION_CODES.P)
@@ -543,13 +377,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
         val cameraPosition = CameraPosition.Builder().target(ll).zoom(15.5f).build()
         map.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition))
     }
-
-    //display default location
-    private fun displayDefaultLocation(ll: LatLng) {
-        moveView(ll)
-        animateView(ll)
-    }
-
     private fun getCarMarker(ll: LatLng): Marker {
 //        val bitmapDescriptor = BitmapDescriptorFactory.
 //        fromBitmap(MapUtils.getStartingLocationBitmap())
@@ -557,50 +384,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
             MarkerOptions().position(ll).flat(true).icon(BitmapDescriptorFactory.fromResource(R.mipmap.ic_launcher_round))
         )!!
     }
-    private fun getOriginMarker(ll: LatLng): Marker? {
-        val bitmapDescriptor =
-            BitmapDescriptorFactory.fromBitmap(MapUtils.getStartingLocationBitmap())
-        return map.addMarker(
-            MarkerOptions().position(ll).flat(true).icon(bitmapDescriptor)
-        )
-    }
-
-    //to draw path between origin and destination
-//    private fun displayPath(latLngList: ArrayList<LatLng>){
-//
-//        val builder = LatLngBounds.Builder()
-//        for (latLng in latLngList) {
-//            builder.include(latLng)
-//        }
-//        val boundBuilds = builder.build()
-//        map.animateCamera(CameraUpdateFactory.newLatLngBounds(boundBuilds, 2))
-//
-//        val polyOptions = PolylineOptions()
-//        polyOptions.color(Color.GRAY)
-//        polyOptions.width(5f)
-//        polyOptions.addAll(latLngList)
-//       val greyLine = map.addPolyline(polyOptions)
-//
-//        val blackPolyOptions = PolylineOptions()
-//        blackPolyOptions.color(Color.BLACK)
-//        blackPolyOptions.width(5f)
-//       val blackLine = map.addPolyline(blackPolyOptions)
-//
-//       val oMarker = getOriginMarker(latLngList[0])
-//        oMarker?.setAnchor(0.5f, 0.5f)
-//       val dMarker = getOriginMarker(latLngList[latLngList.size - 1])
-//        dMarker?.setAnchor(0.5f, 0.5f)
-//
-//        val polyAnimator = polyAnimator()
-//        polyAnimator.addUpdateListener { valueAnimator ->
-//            val precent = (valueAnimator.animatedValue as Int)
-//            val indexNumber = (greyLine?.points!!.size) * (precent / 100.0f).toInt()
-//            blackLine?.points = greyLine?.points!!.subList(0, indexNumber)
-//        }
-//        polyAnimator.start()
-//    }
-
-    //check if car is moving or not...call to move
+   //check if car is moving or not...call to move
     private fun updateCarLoc(ll: LatLng) {
         if (movingMarker == null) {
             movingMarker = getCarMarker(ll)
